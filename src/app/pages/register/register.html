@@ -1,0 +1,56 @@
+<app-header></app-header>
+<main class="auth-page">
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <h2>Crea tu Cuenta en PrecioFácil</h2>
+        <p>Empieza a tomar decisiones financieras inteligentes hoy mismo.</p>
+      </div>
+
+      <form class="auth-form" (submit)="onSubmit($event)">
+        <div class="form-group">
+          <label for="username">Nombre de Usuario <span class="required">*</span></label>
+          <input type="text" id="username" name="username" class="form-control" required placeholder="Tu nombre o alias">
+        </div>
+
+        <div class="form-group">
+          <label for="email">Correo Electrónico <span class="optional">(Opcional)</span></label>
+          <input type="email" id="email" name="email" class="form-control" placeholder="Para recuperar tu cuenta">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Contraseña <span class="required">*</span></label>
+          <input type="password" id="password" name="password" class="form-control" required placeholder="Crea una contraseña segura">
+        </div>
+
+        <div class="form-group">
+          <label>Tipo de Negocio <span class="required">*</span></label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="businessType" value="emprendimiento" [ngModel]="businessType()" (ngModelChange)="businessType.set($event)">
+              Emprendimiento (Casero/Pequeño)
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="businessType" value="empresa" [ngModel]="businessType()" (ngModelChange)="businessType.set($event)">
+              Empresa (Registrada)
+            </label>
+          </div>
+        </div>
+
+        @if (businessType() === 'emprendimiento') {
+          <div class="form-group slide-down">
+            <label for="businessName">Nombre del Emprendimiento</label>
+            <input type="text" id="businessName" name="businessName" class="form-control" placeholder="Ej: Postres de María">
+          </div>
+        }
+
+        <button type="submit" class="btn btn-secondary btn-block">Crear Cuenta Gratis</button>
+      </form>
+
+      <div class="auth-footer">
+        <p>¿Ya tienes una cuenta? <a routerLink="/login" class="auth-link">Inicia Sesión</a></p>
+      </div>
+    </div>
+  </div>
+</main>
+<app-footer></app-footer>
