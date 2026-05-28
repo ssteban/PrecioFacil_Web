@@ -2,9 +2,9 @@
   background-color: var(--color-bg-light);
   min-height: calc(100vh - 80px); /* Adjust based on header height */
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 5vh 20px 40px;
 }
 
 .auth-container {
@@ -84,6 +84,20 @@
 
 .auth-link:hover {
   text-decoration: underline;
+}
+
+.alert {
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.alert-error {
+  background-color: #fce4e4;
+  color: #c0392b;
+  border: 1px solid #f5c6c6;
 }
 
 /* Radio buttons styles for register */

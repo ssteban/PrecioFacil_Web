@@ -1,0 +1,7 @@
+<div class="layout-wrapper">
+  <app-internal-header></app-internal-header>
+  
+  <div class="main-content" [class.sidebar-pinned]="uiService.isSidebarPinned()">
+    <router-outlet></router-outlet>
+  </div>
+</div>

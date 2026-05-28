@@ -18,6 +18,12 @@
           <input type="password" id="password" name="password" class="form-control" required placeholder="********">
         </div>
 
+        @if (loginError()) {
+          <div class="alert alert-error">
+            {{ loginError() }}
+          </div>
+        }
+
         <button type="submit" class="btn btn-primary btn-block">Iniciar Sesión</button>
       </form>
 

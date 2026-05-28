@@ -1,0 +1,54 @@
+<main class="sales-page">
+  <div class="container">
+    <div class="page-header">
+      <h1>Registro de Ventas</h1>
+      <p>Alimenta tu algoritmo. Cuéntanos cómo te fue hoy para sugerirte qué producir mañana sin desperdicios.</p>
+    </div>
+
+    <div class="form-card">
+      <form (ngSubmit)="save()" #salesForm="ngForm">
+        
+        <div class="form-group">
+          <label>¿Qué día fue la venta?</label>
+          <input type="text" class="form-control" value="Hoy" disabled>
+        </div>
+
+        <div class="form-group">
+          <label for="product">¿Qué producto vendiste?</label>
+          <select id="product" name="product" class="form-control" [ngModel]="selectedProductId()" (ngModelChange)="selectedProductId.set($event)" required>
+            <option value="" disabled selected>Selecciona un producto</option>
+            @for (p of dataService.products(); track p.id) {
+              <option [value]="p.id">{{ p.name }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="sold">¿Cuántas unidades lograste vender hoy?</label>
+          <input type="number" id="sold" name="sold" class="form-control" [ngModel]="unitsSold()" (ngModelChange)="unitsSold.set($event)" required min="0" placeholder="Ej: 30">
+        </div>
+
+        <div class="form-group">
+          <label>¿Te sobraron unidades que tuviste que botar o regalar?</label>
+          <div class="radio-group">
+            <label class="radio-option">
+              <input type="radio" name="hadLeftovers" [value]="true" [ngModel]="hadLeftovers()" (ngModelChange)="hadLeftovers.set($event)"> Sí
+            </label>
+            <label class="radio-option">
+              <input type="radio" name="hadLeftovers" [value]="false" [ngModel]="hadLeftovers()" (ngModelChange)="hadLeftovers.set($event)"> No, vendí todo
+            </label>
+          </div>
+        </div>
+
+        @if (hadLeftovers()) {
+          <div class="form-group slide-down">
+            <label for="leftovers">¿Cuántas te sobraron?</label>
+            <input type="number" id="leftovers" name="leftovers" class="form-control" [ngModel]="leftoversCount()" (ngModelChange)="leftoversCount.set($event)" min="1" placeholder="Ej: 5">
+          </div>
+        }
+
+        <button type="submit" class="btn btn-secondary btn-block" [disabled]="!salesForm.form.valid">Guardar Cierre de Día</button>
+      </form>
+    </div>
+  </div>
+</main>

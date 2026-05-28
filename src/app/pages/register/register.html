@@ -24,6 +24,50 @@
         </div>
 
         <div class="form-group">
+          <label for="confirmPassword">Confirmar Contraseña <span class="required">*</span></label>
+          <input type="password" id="confirmPassword" name="confirmPassword" class="form-control" required placeholder="Repite tu contraseña">
+        </div>
+
+        <div class="form-group">
+          <label for="country">País <span class="required">*</span></label>
+          <input type="text" id="country" name="country" list="countryList" [ngModel]="selectedCountry()" (ngModelChange)="onCountryChange($event)" class="form-control" autocomplete="off" placeholder="Busca tu país" required [disabled]="isLoadingCountries()">
+          <datalist id="countryList">
+            @for (country of countries(); track country) {
+              <option [value]="country"></option>
+            }
+          </datalist>
+          @if (isLoadingCountries()) {
+            <small class="loading-text">Cargando países...</small>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="department">Departamento / Estado <span class="required">*</span></label>
+          <input type="text" id="department" name="department" list="departmentList" [ngModel]="selectedDepartment()" (ngModelChange)="onDepartmentChange($event)" class="form-control" autocomplete="off" placeholder="Busca tu departamento" required [disabled]="!selectedCountry() || isLoadingDepartments()">
+          <datalist id="departmentList">
+            @for (dept of departments(); track dept) {
+              <option [value]="dept"></option>
+            }
+          </datalist>
+          @if (isLoadingDepartments()) {
+            <small class="loading-text">Cargando departamentos...</small>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="city">Ciudad <span class="required">*</span></label>
+          <input type="text" id="city" name="city" list="cityList" [ngModel]="selectedCity()" (ngModelChange)="onCityChange($event)" class="form-control" autocomplete="off" placeholder="Busca tu ciudad" required [disabled]="!selectedDepartment() || isLoadingCities()">
+          <datalist id="cityList">
+            @for (city of cities(); track city) {
+              <option [value]="city"></option>
+            }
+          </datalist>
+          @if (isLoadingCities()) {
+            <small class="loading-text">Cargando ciudades...</small>
+          }
+        </div>
+
+        <div class="form-group">
           <label>Tipo de Negocio <span class="required">*</span></label>
           <div class="radio-group">
             <label class="radio-option">
