@@ -1,0 +1,91 @@
+.produccion-page {
+  padding-top: 40px;
+}
+
+.production-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.production-card {
+  background-color: var(--color-white);
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  border: 1px solid var(--color-bg-light);
+  display: flex;
+  flex-direction: column;
+}
+
+.card-header {
+  background-color: rgba(67, 97, 238, 0.05);
+  padding: 15px 20px;
+  border-bottom: 1px solid var(--color-bg-light);
+}
+
+.card-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--color-text-dark);
+}
+
+.card-body {
+  padding: 20px;
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.suggestion-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.suggestion-label {
+  font-size: 0.9rem;
+  color: var(--color-text-light);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.suggestion-value {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  line-height: 1;
+}
+
+.suggestion-value small {
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--color-text-dark);
+}
+
+.suggestion-container.empty-data .suggestion-value {
+  font-size: 1.8rem;
+  color: #fca311;
+}
+
+.suggestion-note {
+  font-size: 0.85rem;
+  color: var(--color-text-light);
+  margin: 0;
+  font-style: italic;
+}
+
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  background-color: var(--color-white);
+  border-radius: 12px;
+  color: var(--color-text-light);
+  border: 2px dashed var(--color-bg-light);
+}

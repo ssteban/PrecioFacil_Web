@@ -1,7 +1,8 @@
-import { Component, HostListener } from '@angular/core';
+import { Component, HostListener, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { Auth } from '../../services/auth';
 import { UiService } from '../../services/ui.service';
+import { DialogService } from '../../services/dialog';
 
 @Component({
   selector: 'app-internal-header',
@@ -10,15 +11,37 @@ import { UiService } from '../../services/ui.service';
   styleUrl: './internal-header.css'
 })
 export class InternalHeader {
-  constructor(private auth: Auth, public uiService: UiService) {}
+  openMenu = signal<string | null>(null);
 
-  logout() {
-    this.auth.logout();
+  constructor(private auth: Auth, public uiService: UiService, private dialog: DialogService) {}
+
+  async logout() {
+    try {
+      const confirmed = await this.dialog.confirm(
+        'Cerrar Sesion',
+        'Estas seguro que deseas salir de tu cuenta?',
+        'Si, salir',
+        'warning'
+      );
+
+      if (confirmed) {
+        this.auth.logout();
+      }
+    } catch (e) {
+      console.error(e);
+      this.auth.logout();
+    }
   }
 
   toggleMenu(event: Event) {
     event.stopPropagation();
     this.uiService.toggleMenu();
+  }
+
+  toggleSubmenu(menuName: string, event: Event) {
+    event.stopPropagation();
+    event.preventDefault();
+    this.openMenu.update(current => current === menuName ? null : menuName);
   }
 
   togglePin() {
@@ -35,8 +58,6 @@ export class InternalHeader {
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
-    // If sidebar is open and not pinned, and click is outside sidebar, close it.
-    // We already stop propagation on hamburger button.
     const sidebar = document.querySelector('.sidebar');
     if (this.uiService.isSidebarOpen() && !this.uiService.isSidebarPinned()) {
       if (sidebar && !sidebar.contains(event.target as Node)) {

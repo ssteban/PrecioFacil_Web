@@ -14,12 +14,34 @@
   gap: 25px;
 }
 
-.product-card {
-  background-color: var(--color-white);
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-  border: 1px solid #eee;
+.card-actions {
+  display: flex;
+  gap: 5px;
+}
+
+.btn-icon.small {
+  padding: 5px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background-color: var(--color-bg-light);
+  border: none;
+  cursor: pointer;
+  color: var(--color-text-dark);
+  transition: all 0.2s;
+}
+
+.btn-icon.small:hover {
+  background-color: rgba(67, 97, 238, 0.1);
+  color: var(--color-primary);
+}
+
+.btn-icon.small.danger:hover {
+  background-color: rgba(239, 35, 60, 0.1);
+  color: var(--color-accent);
 }
 
 .card-header {

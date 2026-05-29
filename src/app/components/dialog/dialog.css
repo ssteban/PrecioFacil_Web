@@ -1,0 +1,107 @@
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease-out forwards;
+}
+
+.dialog-content {
+  background-color: var(--color-white);
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 400px;
+  padding: 30px;
+  text-align: center;
+  animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.dialog-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.dialog-icon.success {
+  background-color: rgba(46, 204, 113, 0.1);
+  color: #2ecc71;
+}
+
+.dialog-icon.warning {
+  background-color: rgba(243, 156, 18, 0.1);
+  color: #f39c12;
+}
+
+.dialog-icon.error {
+  background-color: rgba(239, 35, 60, 0.1);
+  color: var(--color-accent);
+}
+
+.dialog-icon.info {
+  background-color: rgba(67, 97, 238, 0.1);
+  color: var(--color-primary);
+}
+
+.dialog-title {
+  margin: 0 0 10px;
+  font-size: 1.25rem;
+  color: var(--color-text-dark);
+}
+
+.dialog-message {
+  margin: 0 0 25px;
+  color: var(--color-text-light);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.dialog-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.dialog-actions .btn {
+  flex: 1;
+}
+
+.btn-accent {
+  background-color: transparent;
+  color: #ef233c; /* Letra roja para que se lea */
+  border: 2px solid #ef233c; /* Borde rojo que pediste */
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-accent:hover {
+  background-color: #ef233c;
+  color: #ffffff; /* Letra blanca al poner el puntero encima */
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

@@ -42,23 +42,43 @@
           <span class="text">Panel</span>
         </a>
       </li>
-      <li>
-        <a routerLink="/tanteo" routerLinkActive="active" (click)="closeOnNavigate()">
-          <span class="icon">🧮</span>
-          <span class="text">Tanteo (Costos)</span>
-        </a>
-      </li>
-      <li>
-        <a routerLink="/catalogo" routerLinkActive="active" (click)="closeOnNavigate()">
+      <li class="submenu-container" [class.open]="openMenu() === 'inventario'">
+        <a href="#" (click)="toggleSubmenu('inventario', $event)" class="submenu-header">
           <span class="icon">📦</span>
-          <span class="text">Mis Productos</span>
+          <span class="text">Inventario</span>
+          <svg class="chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </a>
+        <ul class="submenu">
+          <li>
+            <a routerLink="/catalogo" routerLinkActive="active" (click)="closeOnNavigate()">
+              <span class="text">Mis Productos</span>
+            </a>
+          </li>
+          <li>
+            <a routerLink="/produccion" routerLinkActive="active" (click)="closeOnNavigate()">
+              <span class="text">Producción del Día</span>
+            </a>
+          </li>
+        </ul>
       </li>
-      <li>
-        <a routerLink="/ventas" routerLinkActive="active" (click)="closeOnNavigate()">
+      <li class="submenu-container" [class.open]="openMenu() === 'ventas'">
+        <a href="#" (click)="toggleSubmenu('ventas', $event)" class="submenu-header">
           <span class="icon">📈</span>
-          <span class="text">Ventas</span>
+          <span class="text">Gestión de Ventas</span>
+          <svg class="chevron" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
         </a>
+        <ul class="submenu">
+          <li>
+            <a routerLink="/cerrar-venta" routerLinkActive="active" (click)="closeOnNavigate()">
+              <span class="text">Cerrar Venta</span>
+            </a>
+          </li>
+          <li>
+            <a routerLink="/ventas" routerLinkActive="active" (click)="closeOnNavigate()">
+              <span class="text">Histórico de Ventas</span>
+            </a>
+          </li>
+        </ul>
       </li>
     </ul>
   </nav>

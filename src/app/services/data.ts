@@ -43,6 +43,16 @@ export class Data {
     this.products.update(p => [...p, newProduct]);
   }
 
+  updateProduct(id: string, updatedData: Partial<Product>) {
+    this.products.update(products => 
+      products.map(p => p.id === id ? { ...p, ...updatedData } : p)
+    );
+  }
+
+  deleteProduct(id: string) {
+    this.products.update(products => products.filter(p => p.id !== id));
+  }
+
   updateProductCost(productId: string, newCost: number, newSuggestedPrice: number, newProfit: number) {
     this.products.update(products => 
       products.map(p => p.id === productId ? { ...p, cost: newCost, suggestedPrice: newSuggestedPrice, profit: newProfit } : p)
@@ -59,5 +69,21 @@ export class Data {
     if (prodSales.length === 0) return 0;
     const totalSold = prodSales.reduce((sum, sale) => sum + sale.unitsSold, 0);
     return Math.round(totalSold / prodSales.length);
+  }
+
+  getSuggestedProduction(productId: string): number {
+    const prodSales = this.sales().filter(s => s.productId === productId);
+    if (prodSales.length === 0) return 0;
+    
+    // Average sold minus average leftovers
+    const totalSold = prodSales.reduce((sum, sale) => sum + sale.unitsSold, 0);
+    const totalLeftovers = prodSales.reduce((sum, sale) => sum + sale.leftovers, 0);
+    
+    const avgSold = totalSold / prodSales.length;
+    const avgLeftovers = totalLeftovers / prodSales.length;
+    
+    const suggestion = Math.round(avgSold - (avgLeftovers * 0.5)); // Be a little conservative with leftovers
+    
+    return suggestion > 0 ? suggestion : 0;
   }
 }

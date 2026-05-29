@@ -150,6 +150,51 @@
   border-right: 4px solid var(--color-primary);
 }
 
+/* Submenu Styles */
+.submenu-container {
+  display: flex;
+  flex-direction: column;
+}
+
+.submenu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chevron {
+  transition: transform 0.3s ease;
+  margin-left: auto;
+}
+
+.submenu-container.open .chevron {
+  transform: rotate(180deg);
+}
+
+.submenu {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.3s ease-in-out;
+  background-color: #f8f9fa; /* slightly darker background to distinguish */
+}
+
+.submenu-container.open .submenu {
+  max-height: 200px; /* Adjust based on content */
+}
+
+.submenu li a {
+  padding-left: 48px; /* Indent sub items */
+  font-size: 0.95rem;
+  font-weight: 500;
+  border-right: none;
+}
+
+.submenu li a.active {
+  background-color: transparent;
+  color: var(--color-primary);
+  border-right: none;
+}
+
 /* Sidebar Footer for Logout */
 .sidebar-footer {
   padding: 20px;
