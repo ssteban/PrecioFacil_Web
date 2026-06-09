@@ -141,3 +141,23 @@
     transform: translateY(0);
   }
 }
+
+.alert {
+  padding: 12px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.alert-error {
+  background-color: #fce4e4;
+  color: #c0392b;
+  border: 1px solid #f5c6c6;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}

@@ -1,18 +1,36 @@
 import { Component, signal, inject, OnInit } from '@angular/core';
-import { RouterLink } from '@angular/router';
+import { TitleCasePipe } from '@angular/common';
+import { RouterLink, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Header } from '../../components/header/header';
 import { Footer } from '../../components/footer/footer';
 import { LocationService } from '../../services/location.service';
+import { Auth, RegisterRequest } from '../../services/auth';
+
+const TIPOS_NEGOCIO = [
+  'EMPRENDIMIENTO',
+  'EMPRESA',
+  'RESTAURANTE',
+  'COMIDA_RAPIDA',
+  'PANADERIA',
+];
 
 @Component({
   selector: 'app-register',
-  imports: [RouterLink, FormsModule, Header, Footer],
+  imports: [RouterLink, FormsModule, TitleCasePipe, Header, Footer],
   templateUrl: './register.html',
   styleUrl: './register.css',
 })
 export class Register implements OnInit {
-  businessType = signal<'emprendimiento' | 'empresa'>('emprendimiento');
+  private locationService = inject(LocationService);
+  private authService = inject(Auth);
+  private router = inject(Router);
+
+  tiposNegocio = TIPOS_NEGOCIO;
+
+  registerError = signal<string | null>(null);
+  registerSuccess = signal(false);
+  isLoading = signal(false);
 
   // Location signals
   countries = signal<string[]>([]);
@@ -22,12 +40,11 @@ export class Register implements OnInit {
   selectedCountry = signal<string>('');
   selectedDepartment = signal<string>('');
   selectedCity = signal<string>('');
+  selectedTipoNegocio = signal<string>('');
 
   isLoadingCountries = signal<boolean>(false);
   isLoadingDepartments = signal<boolean>(false);
   isLoadingCities = signal<boolean>(false);
-
-  private locationService = inject(LocationService);
 
   ngOnInit() {
     this.loadCountries();
@@ -49,8 +66,7 @@ export class Register implements OnInit {
 
   onCountryChange(country: string) {
     this.selectedCountry.set(country);
-    
-    // Reset lower levels
+
     this.selectedDepartment.set('');
     this.selectedCity.set('');
     this.departments.set([]);
@@ -73,8 +89,6 @@ export class Register implements OnInit {
 
   onDepartmentChange(department: string) {
     this.selectedDepartment.set(department);
-    
-    // Reset lower level
     this.selectedCity.set('');
     this.cities.set([]);
 
@@ -97,37 +111,60 @@ export class Register implements OnInit {
     this.selectedCity.set(city);
   }
 
-  onSubmit(event: Event) {
+  async onSubmit(event: Event) {
     event.preventDefault();
-    
+    this.registerError.set(null);
+
     const form = event.target as HTMLFormElement;
+    const username = (form.elements.namedItem('username') as HTMLInputElement).value;
+    const correo = (form.elements.namedItem('correo') as HTMLInputElement).value;
     const password = (form.elements.namedItem('password') as HTMLInputElement).value;
     const confirmPassword = (form.elements.namedItem('confirmPassword') as HTMLInputElement).value;
+    const nombreEmprendimiento = (form.elements.namedItem('businessName') as HTMLInputElement)?.value || '';
+    const tipoNegocio = this.selectedTipoNegocio();
 
     if (password !== confirmPassword) {
-      alert('Las contraseñas no coinciden. Por favor, verifica e inténtalo de nuevo.');
+      this.registerError.set('Las contraseñas no coinciden.');
       return;
     }
 
-    // Validate location
     if (!this.countries().includes(this.selectedCountry())) {
-      alert('Por favor, selecciona un país válido de la lista.');
+      this.registerError.set('Selecciona un país válido.');
       return;
     }
     if (!this.departments().includes(this.selectedDepartment())) {
-      alert('Por favor, selecciona un departamento/estado válido de la lista.');
+      this.registerError.set('Selecciona un departamento/estado válido.');
       return;
     }
     if (!this.cities().includes(this.selectedCity())) {
-      alert('Por favor, selecciona una ciudad válida de la lista.');
+      this.registerError.set('Selecciona una ciudad válida.');
+      return;
+    }
+    if (!tipoNegocio) {
+      this.registerError.set('Selecciona un tipo de negocio.');
       return;
     }
 
-    // TODO: Implement registration logic
-    console.log('Registration submitted', {
-      country: this.selectedCountry(),
-      department: this.selectedDepartment(),
-      city: this.selectedCity()
-    });
+    const req: RegisterRequest = {
+      username,
+      correo,
+      contrasena: password,
+      pais: this.selectedCountry(),
+      departamento: this.selectedDepartment(),
+      ciudad: this.selectedCity(),
+      nombre_emprendimiento: nombreEmprendimiento,
+      tipo_negocio: tipoNegocio,
+    };
+
+    this.isLoading.set(true);
+    const result = await this.authService.register(req);
+    this.isLoading.set(false);
+
+    if (result.success) {
+      this.registerSuccess.set(true);
+      setTimeout(() => this.router.navigate(['/login']), 2000);
+    } else {
+      this.registerError.set(result.message);
+    }
   }
 }

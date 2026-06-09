@@ -12,21 +12,24 @@ import { Auth } from '../../services/auth';
 })
 export class Login {
   loginError = signal<string | null>(null);
+  isLoading = signal(false);
 
   constructor(private authService: Auth) {}
 
-  onSubmit(event: Event) {
+  async onSubmit(event: Event) {
     event.preventDefault();
     this.loginError.set(null);
-    
-    const form = event.target as HTMLFormElement;
-    const username = (form.elements.namedItem('username') as HTMLInputElement).value;
-    const password = (form.elements.namedItem('password') as HTMLInputElement).value;
 
-    const success = this.authService.login(username, password);
-    
+    const form = event.target as HTMLFormElement;
+    const correo = (form.elements.namedItem('correo') as HTMLInputElement).value;
+    const contrasena = (form.elements.namedItem('contrasena') as HTMLInputElement).value;
+
+    this.isLoading.set(true);
+    const success = await this.authService.login(correo, contrasena);
+    this.isLoading.set(false);
+
     if (!success) {
-      this.loginError.set('Credenciales incorrectas. Intenta con user123 / 123456');
+      this.loginError.set('Credenciales incorrectas. Verifica tu correo y contraseña.');
     }
   }
 }

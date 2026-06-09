@@ -13,7 +13,7 @@ import { DialogService } from '../../services/dialog';
 export class InternalHeader {
   openMenu = signal<string | null>(null);
 
-  constructor(private auth: Auth, public uiService: UiService, private dialog: DialogService) {}
+  constructor(public auth: Auth, public uiService: UiService, private dialog: DialogService) {}
 
   async logout() {
     try {
