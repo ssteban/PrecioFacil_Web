@@ -10,6 +10,7 @@ const NAV_ITEMS = [
 
 function Sidebar({ expanded, onToggle, mobileOpen, onMobileClose, onLogout }) {
   const location = useLocation()
+  const user = JSON.parse(localStorage.getItem('user') || 'null')
 
   const handleNavClick = () => {
     if (mobileOpen) onMobileClose()
@@ -101,7 +102,7 @@ function Sidebar({ expanded, onToggle, mobileOpen, onMobileClose, onLogout }) {
                 ${expanded ? 'opacity-100 delay-100' : 'opacity-0'}
               `}
             >
-              Usuario Costly
+              {user ? user.username : 'Usuario'}
             </span>
           </div>
           <button

@@ -1,7 +1,16 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { Package, Plus, X } from 'lucide-react'
 import { convertirABase, formatoCOP } from '../utils/conversiones'
+import {
+  getCategorias,
+  createCategoria,
+  getInsumos,
+  createInsumo,
+  updateInsumo,
+  deleteInsumo,
+  parseInsumo,
+} from '../api/insumoApi'
 
 const UNIDADES = [
   { value: 'g', label: 'Gramos (g)' },
@@ -17,7 +26,46 @@ const INITIAL_FORM = {
   precioCompra: '',
   cantidadComercial: '',
   unidadMedida: 'g',
-  categoria: 'General',
+  categoria: 'GENERAL',
+}
+
+function buildInsumoPayload(formData) {
+  let { cantidadComercial, unidadMedida } = formData
+  if (!cantidadComercial) {
+    cantidadComercial = Number(formData.precioCompra)
+    unidadMedida = 'COP'
+  } else {
+    cantidadComercial = Number(cantidadComercial)
+  }
+  return {
+    nombre_insumo: formData.nombre.trim(),
+    precio_compra: Number(formData.precioCompra),
+    cantidad: cantidadComercial,
+    unidad_medida: unidadMedida,
+    categoria: formData.categoria.toUpperCase(),
+  }
+}
+
+async function refreshCategorias(setCategorias) {
+  try {
+    const cats = await getCategorias()
+    const nombres = cats.map((c) => c.nombre.toUpperCase())
+    if (!nombres.includes('GENERAL')) {
+      nombres.unshift('GENERAL')
+    }
+    setCategorias(nombres)
+  } catch {
+    console.error('Error al cargar categorías')
+  }
+}
+
+async function refreshInsumos(setInsumos) {
+  try {
+    const list = await getInsumos()
+    setInsumos(list.map(parseInsumo))
+  } catch {
+    console.error('Error al cargar insumos')
+  }
 }
 
 function InsumosCostos() {
@@ -27,53 +75,54 @@ function InsumosCostos() {
   const [showNuevaCategoria, setShowNuevaCategoria] = useState(false)
   const [nuevaCategoria, setNuevaCategoria] = useState('')
   const [formData, setFormData] = useState(INITIAL_FORM)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    refreshCategorias(setCategorias)
+    refreshInsumos(setInsumos)
+  }, [])
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
   }
 
-  const handleAgregarCategoria = () => {
+  const handleAgregarCategoria = async () => {
     const nombre = nuevaCategoria.trim()
     if (!nombre || categorias.includes(nombre)) return
-    setCategorias((prev) => [...prev, nombre])
-    setFormData((prev) => ({ ...prev, categoria: nombre }))
+    try {
+      await createCategoria(nombre.toUpperCase())
+      await refreshCategorias(setCategorias)
+      setFormData((prev) => ({ ...prev, categoria: nombre }))
+    } catch {
+      setError('Error al crear categoría')
+    }
     setNuevaCategoria('')
     setShowNuevaCategoria(false)
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
     const { nombre, precioCompra } = formData
     if (!nombre.trim() || !precioCompra) return
 
-    let { cantidadComercial, unidadMedida } = formData
-    if (!cantidadComercial) {
-      cantidadComercial = Number(precioCompra)
-      unidadMedida = 'COP'
-    } else {
-      cantidadComercial = Number(cantidadComercial)
+    setSubmitting(true)
+    try {
+      const payload = buildInsumoPayload(formData)
+      if (editandoId) {
+        await updateInsumo(editandoId, payload)
+        setEditandoId(null)
+      } else {
+        await createInsumo(payload)
+      }
+      await refreshInsumos(setInsumos)
+      setFormData(INITIAL_FORM)
+    } catch (err) {
+      setError(err.message || 'Error al guardar insumo')
+    } finally {
+      setSubmitting(false)
     }
-
-    const insumoData = {
-      ...formData,
-      cantidadComercial,
-      unidadMedida,
-      precioCompra: Number(precioCompra),
-    }
-
-    if (editandoId) {
-      setInsumos((prev) =>
-        prev.map((i) => (i.id === editandoId ? { ...i, ...insumoData, createdAt: i.createdAt } : i)),
-      )
-      setEditandoId(null)
-    } else {
-      setInsumos((prev) => [
-        ...prev,
-        { id: crypto.randomUUID(), ...insumoData, createdAt: new Date().toISOString() },
-      ])
-    }
-
-    setFormData(INITIAL_FORM)
   }
 
   const handleEditar = (insumo) => {
@@ -87,12 +136,21 @@ function InsumosCostos() {
     })
   }
 
-  const handleEliminar = (id) => {
+  const handleEliminar = async (id) => {
     if (!window.confirm('¿Estás seguro de eliminar este insumo? Esta acción no se puede deshacer.')) return
-    setInsumos((prev) => prev.filter((i) => i.id !== id))
-    if (editandoId === id) {
-      setEditandoId(null)
-      setFormData(INITIAL_FORM)
+    setError('')
+    setSubmitting(true)
+    try {
+      await deleteInsumo(id)
+      await refreshInsumos(setInsumos)
+      if (editandoId === id) {
+        setEditandoId(null)
+        setFormData(INITIAL_FORM)
+      }
+    } catch (err) {
+      setError(err.message || 'Error al eliminar insumo')
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -219,12 +277,21 @@ function InsumosCostos() {
             </div>
           </div>
 
+          {error && (
+            <p className="text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg">{error}</p>
+          )}
+
           <div className="flex items-center gap-3 pt-2">
             <button
               type="submit"
-              className="px-6 py-2.5 bg-emerald-500 text-white text-sm font-semibold rounded-lg hover:bg-emerald-600 transition"
+              disabled={submitting}
+              className={`px-6 py-2.5 text-sm font-semibold rounded-lg transition ${
+                submitting
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
+              }`}
             >
-              {editandoId ? 'Actualizar Insumo' : 'Guardar Insumo'}
+              {submitting ? 'Guardando...' : editandoId ? 'Actualizar Insumo' : 'Guardar Insumo'}
             </button>
 
             {editandoId && (

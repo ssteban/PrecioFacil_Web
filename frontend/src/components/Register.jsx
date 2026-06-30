@@ -1,18 +1,16 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import Navbar from './Navbar'
 import Footer from './Footer'
 import AuthLayout from './AuthLayout'
+import { registerUser } from '../api/authApi'
 
 const TIPOS_NEGOCIO = [
-  'Autoempleo / Negocio Casero',
-  'Repostería y Pastelería',
-  'Restaurante y Comidas Rápidas',
-  'Cafetería y Heladería',
-  'Artesanías y Manualidades',
-  'Textil y Confitería',
-  'Calzado y Marroquinería',
-  'Otro tipo de manufactura',
+  { label: 'Emprendimiento', value: 'EMPRENDIMIENTO' },
+  { label: 'Empresa', value: 'EMPRESA' },
+  { label: 'Restaurante', value: 'RESTAURANTE' },
+  { label: 'Comida Rápida', value: 'COMIDA_RAPIDA' },
+  { label: 'Panadería', value: 'PANADERIA' },
 ]
 
 const INITIAL_STATE = {
@@ -23,12 +21,17 @@ const INITIAL_STATE = {
   pais: '',
   departamento: '',
   ciudad: '',
-  tipoNegocio: TIPOS_NEGOCIO[0],
+  nombre_emprendimiento: '',
+  tipoNegocio: TIPOS_NEGOCIO[0].value,
 }
 
 function Register() {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState(INITIAL_STATE)
   const [errors, setErrors] = useState({})
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [success, setSuccess] = useState(false)
 
   const handleChange = (e) => {
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }))
@@ -61,15 +64,39 @@ function Register() {
     if (!formData.ciudad.trim()) {
       newErrors.ciudad = 'Campo requerido'
     }
+    if (!formData.nombre_emprendimiento.trim()) {
+      newErrors.nombre_emprendimiento = 'Campo requerido'
+    }
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
+    setError('')
     if (!validate()) return
-    console.log('Register submitted:', formData)
+
+    setLoading(true)
+    try {
+      const payload = {
+        username: formData.username,
+        correo: formData.email,
+        contrasena: formData.password,
+        pais: formData.pais,
+        departamento: formData.departamento,
+        ciudad: formData.ciudad,
+        nombre_emprendimiento: formData.nombre_emprendimiento,
+        tipo_negocio: formData.tipoNegocio,
+      }
+      await registerUser(payload)
+      setSuccess(true)
+      setTimeout(() => navigate('/login'), 2000)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const inputClass = (name) =>
@@ -212,6 +239,25 @@ function Register() {
             </div>
 
             <div>
+              <label htmlFor="nombre_emprendimiento" className="block text-sm font-medium text-slate-700 mb-1">
+                Nombre del emprendimiento
+              </label>
+              <input
+                id="nombre_emprendimiento"
+                name="nombre_emprendimiento"
+                type="text"
+                required
+                value={formData.nombre_emprendimiento}
+                onChange={handleChange}
+                className={inputClass('nombre_emprendimiento')}
+                placeholder="Nombre de tu negocio"
+              />
+              {errors.nombre_emprendimiento && (
+                <p className="text-red-500 text-xs mt-1">{errors.nombre_emprendimiento}</p>
+              )}
+            </div>
+
+            <div>
               <label htmlFor="tipoNegocio" className="block text-sm font-medium text-slate-700 mb-1">
                 Tipo de negocio
               </label>
@@ -223,18 +269,33 @@ function Register() {
                 className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition text-slate-800 bg-white"
               >
                 {TIPOS_NEGOCIO.map((tipo) => (
-                  <option key={tipo} value={tipo}>
-                    {tipo}
+                  <option key={tipo.value} value={tipo.value}>
+                    {tipo.label}
                   </option>
                 ))}
               </select>
             </div>
 
+            {error && (
+              <p className="text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg">{error}</p>
+            )}
+
+            {success && (
+              <p className="text-emerald-600 text-sm text-center bg-emerald-50 py-2 rounded-lg">
+                ¡Registro exitoso! Redirigiendo...
+              </p>
+            )}
+
             <button
               type="submit"
-              className="w-full bg-emerald-500 text-white py-3 rounded-xl font-bold text-lg hover:bg-emerald-600 transition cursor-pointer mt-2"
+              disabled={loading || success}
+              className={`w-full py-3 rounded-xl font-bold text-lg transition cursor-pointer mt-2 ${
+                loading || success
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
+              }`}
             >
-              Crear Cuenta
+              {loading ? 'Registrando...' : 'Crear Cuenta'}
             </button>
           </form>
 

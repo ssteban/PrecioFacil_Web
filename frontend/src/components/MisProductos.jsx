@@ -1,19 +1,35 @@
 import { useState } from 'react'
-import { Link, useOutletContext } from 'react-router-dom'
+import { Link, useNavigate, useOutletContext } from 'react-router-dom'
 import { Search, Trash2, Package } from 'lucide-react'
 import { formatoCOP } from '../utils/conversiones'
+import { deleteReceta, getRecetas, parseReceta } from '../api/recetaApi'
+import ModalVentaDiaria from './ModalVentaDiaria'
+import HistorialTimeline from './HistorialTimeline'
 
 function MisProductos() {
   const { recetas, setRecetas } = useOutletContext()
+  const navigate = useNavigate()
   const [busqueda, setBusqueda] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [ventaProducto, setVentaProducto] = useState(null)
+  const [historialProducto, setHistorialProducto] = useState(null)
 
   const recetasFiltradas = recetas.filter((r) =>
     r.nombre.toLowerCase().includes(busqueda.toLowerCase())
   )
 
-  const handleEliminar = (id) => {
+  const handleEliminar = async (id) => {
     if (!window.confirm('¿Estás seguro de eliminar este producto?')) return
-    setRecetas((prev) => prev.filter((r) => r.id !== id))
+    setSubmitting(true)
+    try {
+      await deleteReceta(id)
+      const list = await getRecetas()
+      setRecetas(list.map(parseReceta))
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const inputClass =
@@ -95,26 +111,57 @@ function MisProductos() {
                 </p>
               </div>
 
-              <div className="flex items-center justify-end gap-2 mt-4 pt-3 border-t border-slate-100">
+              <div className="mt-4 pt-3 border-t border-slate-100 space-y-2">
                 <button
                   type="button"
-                  onClick={() => alert(`Detalle de "${r.nombre}" — próximo módulo.`)}
-                  className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-gray-100 rounded-lg transition"
+                  onClick={() => setVentaProducto(r)}
+                  className="w-full py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-semibold rounded-xl transition shadow-sm"
                 >
-                  Ver Detalle
+                  Registrar Venta
                 </button>
-                <button
-                  type="button"
-                  onClick={() => handleEliminar(r.id)}
-                  className="p-1.5 rounded-lg hover:bg-red-50 transition text-red-400 hover:text-red-600"
-                >
-                  <Trash2 size={16} />
-                </button>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/dashboard/recetas', { state: { recetaEditar: r } })}
+                      className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-gray-100 rounded-lg transition"
+                    >
+                      Ver Detalle
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setHistorialProducto(r)}
+                      className="px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-gray-100 rounded-lg transition"
+                    >
+                      Ver Registros
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleEliminar(r.id)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 transition text-red-400 hover:text-red-600"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ModalVentaDiaria
+        isOpen={!!ventaProducto}
+        producto={ventaProducto}
+        onClose={() => setVentaProducto(null)}
+        formatoCOP={formatoCOP}
+      />
+      <HistorialTimeline
+        isOpen={!!historialProducto}
+        producto={historialProducto}
+        onClose={() => setHistorialProducto(null)}
+      />
     </div>
   )
 }

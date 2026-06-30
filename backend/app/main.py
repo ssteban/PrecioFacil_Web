@@ -1,13 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth_route
+from app.routes import auth_route, insumo_route, receta_route, venta_diaria_route
 
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:4200", "http://127.0.0.1:4200"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -24,3 +24,6 @@ async def health():
 
 
 app.include_router(auth_route.router, prefix="/auth", tags=["auth"])
+app.include_router(insumo_route.router, prefix="/api", tags=["insumos"])
+app.include_router(receta_route.router, prefix="/api", tags=["recetas"])
+app.include_router(venta_diaria_route.router, prefix="/api", tags=["ventas"])

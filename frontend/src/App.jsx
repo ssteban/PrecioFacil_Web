@@ -7,6 +7,7 @@ import DashboardHome from './components/DashboardHome'
 import InsumosCostos from './components/InsumosCostos'
 import CreadorRecetas from './components/CreadorRecetas'
 import MisProductos from './components/MisProductos'
+import MetricasMermas from './components/MetricasMermas'
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="insumos" element={<InsumosCostos />} />
         <Route path="recetas" element={<CreadorRecetas />} />
         <Route path="productos" element={<MisProductos />} />
+        <Route path="metricas" element={<MetricasMermas />} />
       </Route>
     </Routes>
   )

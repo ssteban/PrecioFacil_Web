@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate, Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import DashboardNavbar from './DashboardNavbar'
+import { getRecetas, parseReceta } from '../api/recetaApi'
 
 const SECTION_TITLES = {
   '/dashboard': 'Dashboard',
@@ -29,7 +30,14 @@ function Dashboard() {
     localStorage.setItem('costly_recetas', JSON.stringify(recetas))
   }, [recetas])
 
+  useEffect(() => {
+    getRecetas()
+      .then((list) => setRecetas(list.map(parseReceta)))
+      .catch(() => console.error('Error al cargar recetas'))
+  }, [])
+
   const handleLogout = () => {
+    localStorage.removeItem('user')
     navigate('/')
   }
 

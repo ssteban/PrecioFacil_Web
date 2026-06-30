@@ -19,10 +19,11 @@ const PLACEHOLDER_CARDS = [
 ]
 
 function DashboardHome() {
+  const user = JSON.parse(localStorage.getItem('user') || 'null')
   return (
     <>
       <h1 className="text-3xl font-bold text-slate-800">
-        ¡Bienvenido de vuelta, Usuario Costly!
+        ¡Bienvenido de vuelta, {user ? user.username : 'Usuario'}!
       </h1>
       <p className="text-slate-500 mt-1">Aquí tienes un resumen de tu negocio.</p>
 

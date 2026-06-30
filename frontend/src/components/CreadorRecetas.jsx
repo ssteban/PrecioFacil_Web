@@ -1,25 +1,74 @@
-import { useState, useMemo } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useState, useMemo, useEffect } from 'react'
+import { useOutletContext, useLocation } from 'react-router-dom'
 import { Search, Package, Plus, X, Trash2, ClipboardList, CheckCircle2 } from 'lucide-react'
 import { convertirABase, formatoCOP } from '../utils/conversiones'
+import { createReceta, updateReceta, getRecetas, parseReceta } from '../api/recetaApi'
+import { createInsumo, getInsumos, parseInsumo } from '../api/insumoApi'
 
 function CreadorRecetas() {
   const { insumos, setInsumos, categorias, setRecetas } = useOutletContext()
+  const location = useLocation()
 
   const [receta, setReceta] = useState({ nombre: '', porcentajeGanancia: 50, unidadesProducidas: 1 })
   const [ingredientes, setIngredientes] = useState([])
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [submittingInsumo, setSubmittingInsumo] = useState(false)
+  const [error, setError] = useState('')
+  const [recetaEditandoId, setRecetaEditandoId] = useState(null)
 
   const [busqueda, setBusqueda] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
 
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedIds, setSelectedIds] = useState(new Set())
-  const [categoriaActiva, setCategoriaActiva] = useState('General')
+  const [categoriaActiva, setCategoriaActiva] = useState('GENERAL')
   const [showNuevoInsumoModal, setShowNuevoInsumoModal] = useState(false)
   const [nuevoInsumoForm, setNuevoInsumoForm] = useState({
-    nombre: '', precioCompra: '', cantidadComercial: '', unidadMedida: 'g', categoria: 'General',
+    nombre: '', precioCompra: '', cantidadComercial: '', unidadMedida: 'g', categoria: 'GENERAL',
   })
+
+  useEffect(() => {
+    const editData = location.state?.recetaEditar
+    if (!editData) return
+
+    setReceta({
+      nombre: editData.nombre,
+      porcentajeGanancia: editData.porcentajeGanancia,
+      unidadesProducidas: editData.unidadesProducidas,
+    })
+    setRecetaEditandoId(editData.id)
+
+    const nuevosIngredientes = editData.ingredientes.map((ing) => {
+      const insumoCompleto = insumos.find((i) => i.id === ing.id)
+      if (insumoCompleto) {
+        const { cantidadBase, unidadLabel } = convertirABase(
+          insumoCompleto.cantidadComercial, insumoCompleto.unidadMedida
+        )
+        return {
+          insumoId: insumoCompleto.id,
+          nombre: insumoCompleto.nombre,
+          cantidadComercial: insumoCompleto.cantidadComercial,
+          cantidadUsar: ing.cantidadUsada,
+          unidadBaseStr: unidadLabel,
+          costoUnidadBase: insumoCompleto.precioCompra / cantidadBase,
+          costoParcial: ing.costoParcial,
+        }
+      }
+      return {
+        insumoId: ing.id,
+        nombre: ing.nombre || `Insumo #${ing.id}`,
+        cantidadComercial: 0,
+        cantidadUsar: ing.cantidadUsada,
+        unidadBaseStr: '',
+        costoUnidadBase: ing.cantidadUsada > 0 ? ing.costoParcial / ing.cantidadUsada : 0,
+        costoParcial: ing.costoParcial,
+      }
+    })
+    setIngredientes(nuevosIngredientes)
+
+    window.history.replaceState({}, document.title)
+  }, [location.state])
 
   const insumosFiltradosBusqueda = busqueda.trim()
     ? insumos.filter((i) => i.nombre.toLowerCase().includes(busqueda.toLowerCase()))
@@ -83,35 +132,47 @@ function CreadorRecetas() {
     setModalOpen(false)
   }
 
-  const handleGuardarNuevoInsumo = (e) => {
+  const handleGuardarNuevoInsumo = async (e) => {
     e.preventDefault()
     const { nombre, precioCompra } = nuevoInsumoForm
     if (!nombre.trim() || !precioCompra) return
 
-    let { cantidadComercial, unidadMedida } = nuevoInsumoForm
-    if (!cantidadComercial) {
-      cantidadComercial = Number(precioCompra)
-      unidadMedida = 'COP'
-    } else {
-      cantidadComercial = Number(cantidadComercial)
-    }
+    setSubmittingInsumo(true)
+    try {
+      let { cantidadComercial, unidadMedida } = nuevoInsumoForm
+      if (!cantidadComercial) {
+        cantidadComercial = Number(precioCompra)
+        unidadMedida = 'COP'
+      } else {
+        cantidadComercial = Number(cantidadComercial)
+      }
 
-    const nuevoInsumo = {
-      id: crypto.randomUUID(),
-      ...nuevoInsumoForm,
-      precioCompra: Number(precioCompra),
-      cantidadComercial,
-      unidadMedida,
-      createdAt: new Date().toISOString(),
-    }
+      const payload = {
+        nombre_insumo: nombre.trim(),
+        precio_compra: Number(precioCompra),
+        cantidad: cantidadComercial,
+        unidad_medida: unidadMedida,
+        categoria: nuevoInsumoForm.categoria.toUpperCase(),
+      }
 
-    setInsumos((prev) => [...prev, nuevoInsumo])
-    agregarInsumoAReceta(nuevoInsumo)
-    setShowNuevoInsumoModal(false)
-    setNuevoInsumoForm({ nombre: '', precioCompra: '', cantidadComercial: '', unidadMedida: 'g', categoria: 'General' })
+      await createInsumo(payload)
+      const refreshed = await getInsumos()
+      const parsed = refreshed.map(parseInsumo)
+      setInsumos(parsed)
+
+      const nuevo = parsed.find((i) => i.nombre === nombre.trim())
+      if (nuevo) agregarInsumoAReceta(nuevo)
+
+      setShowNuevoInsumoModal(false)
+      setNuevoInsumoForm({ nombre: '', precioCompra: '', cantidadComercial: '', unidadMedida: 'g', categoria: 'GENERAL' })
+    } catch (err) {
+      alert(err.message)
+    } finally {
+      setSubmittingInsumo(false)
+    }
   }
 
-  const handleGuardarReceta = () => {
+  const handleGuardarReceta = async () => {
     if (!receta.nombre.trim()) {
       alert('Debes ingresar un nombre para la receta.')
       return
@@ -121,33 +182,45 @@ function CreadorRecetas() {
       return
     }
 
-    const recetaCompleta = {
-      id: Date.now().toString(),
-      nombre: receta.nombre,
-      porcentajeGanancia: receta.porcentajeGanancia,
-      unidadesProducidas: receta.unidadesProducidas,
-      ingredientes: ingredientes.map((ing) => ({
-        id: ing.insumoId,
-        cantidadUsada: ing.cantidadUsar,
-        costoParcial: ing.costoParcial,
-      })),
-      totales: {
-        costoUnitario: Math.round(costoUnitario),
-        precioVentaUnitario: Math.round(precioUnitario),
-        gananciaUnitaria: Math.round(gananciaUnitaria),
-        costoTotalLote: costoTotal,
-      },
-      createdAt: new Date().toISOString(),
+    setSubmitting(true)
+    setError('')
+    try {
+      const payload = {
+        nombre_receta: receta.nombre,
+        porcentaje_ganancia: receta.porcentajeGanancia,
+        produccion: receta.unidadesProducidas,
+        costo_unidad: Math.round(costoUnitario),
+        precio_unidad: Math.round(precioUnitario),
+        ganancia_unidad: Math.round(gananciaUnitaria),
+        total_costo: costoTotal,
+        total_unidad: receta.unidadesProducidas,
+        total_ganancia: Math.round(gananciaNeta),
+        ingredientes: ingredientes.map((ing) => ({
+          id_insumo: ing.insumoId,
+          cantidad_usada: ing.cantidadUsar,
+          costo_parcial: ing.costoParcial,
+        })),
+      }
+      if (recetaEditandoId) {
+        await updateReceta(recetaEditandoId, payload)
+      } else {
+        await createReceta(payload)
+      }
+      const list = await getRecetas()
+      setRecetas(list.map(parseReceta))
+      setIsSuccessModalOpen(true)
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setSubmitting(false)
     }
-
-    setRecetas((prev) => [...prev, recetaCompleta])
-    setIsSuccessModalOpen(true)
   }
 
   const resetFormulario = () => {
     setReceta({ nombre: '', porcentajeGanancia: 50, unidadesProducidas: 1 })
     setIngredientes([])
     setIsSuccessModalOpen(false)
+    setRecetaEditandoId(null)
   }
 
   const insumosEnCategoria = insumos.filter((i) => i.categoria === categoriaActiva)
@@ -368,12 +441,21 @@ function CreadorRecetas() {
             </div>
           </div>
 
+          {error && (
+            <p className="text-red-500 text-sm text-center bg-red-50 py-2 rounded-lg mt-4">{error}</p>
+          )}
+
           <div className="flex justify-end mt-6">
             <button
               onClick={handleGuardarReceta}
-              className="px-8 py-3 bg-emerald-500 text-white font-bold text-lg rounded-xl hover:bg-emerald-600 transition shadow-lg"
+              disabled={submitting}
+              className={`px-8 py-3 font-bold text-lg rounded-xl transition shadow-lg ${
+                submitting
+                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
+              }`}
             >
-              Guardar Receta
+              {submitting ? 'Guardando...' : 'Guardar Receta'}
             </button>
           </div>
         </>
@@ -589,10 +671,10 @@ function CreadorRecetas() {
               <CheckCircle2 size={36} className="text-emerald-500" />
             </div>
             <h3 className="text-xl font-bold text-slate-800 text-center">
-              ¡Receta Guardada Exitosamente!
+              ¡Receta {recetaEditandoId ? 'Actualizada' : 'Guardada'} Exitosamente!
             </h3>
             <p className="text-sm text-slate-600 text-center mt-2">
-              El producto '<span className="font-semibold">{receta.nombre}</span>' se ha registrado en tu
+              El producto '<span className="font-semibold">{receta.nombre}</span>' se ha {recetaEditandoId ? 'actualizado' : 'registrado'} en tu
               historial con un precio de venta sugerido de{' '}
               <span className="font-semibold">{formatoCOP(Math.round(precioUnitario))}</span> por unidad.
             </p>
