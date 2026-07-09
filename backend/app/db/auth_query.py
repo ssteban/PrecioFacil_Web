@@ -5,7 +5,7 @@ from app.util.auth_util import verify_password, hash_password
 
 class AuthQuery:
     @staticmethod
-    def register_user(username, correo, contrasena, pais, departamento, ciudad, nombre_emprendimiento, tipo_negocio):
+    def register_user(username, correo, contrasena, pais, departamento, ciudad, nombre_emprendimiento, tipo_negocio, medios_pago='EN_BLANCO'):
         try:
             with DatabaseConnection() as cursor:
                 tipo_negocio = tipo_negocio.strip().upper()
@@ -22,8 +22,8 @@ class AuthQuery:
                 hashed = hash_password(contrasena)
 
                 cursor.execute(
-                    "INSERT INTO empresas (nombre_emprendimiento, tipo_negocio_id) VALUES (%s, %s) RETURNING id",
-                    (nombre_emprendimiento, tipo_negocio_id)
+                    "INSERT INTO empresas (nombre_emprendimiento, tipo_negocio_id, medios_pago) VALUES (%s, %s, %s) RETURNING id",
+                    (nombre_emprendimiento, tipo_negocio_id, medios_pago)
                 )
                 empresa_id = cursor.fetchone()[0]
 
@@ -33,6 +33,19 @@ class AuthQuery:
                     (username, correo, hashed, pais, departamento, ciudad, empresa_id)
                 )
                 user_id = cursor.fetchone()[0]
+
+                cursor.execute(
+                    "SELECT id_plan, recetas_incluidas_base FROM planes WHERE nombre_plan = 'FREE'"
+                )
+                plan_row = cursor.fetchone()
+                plan_id = plan_row[0] if plan_row else 1
+                limite_base = plan_row[1] if plan_row else 5
+
+                cursor.execute(
+                    """INSERT INTO usuario_suscripciones (id_usuario, id_plan, paquetes_extra_comprados, limite_recetas_total, estado_suscripcion)
+                       VALUES (%s, %s, %s, %s, 'ACTIVO')""",
+                    (user_id, plan_id, 0, limite_base)
+                )
                 return {"status": "success", "id": user_id}
         except psycopg2.IntegrityError as e:
             if 'correo' in str(e):
@@ -48,7 +61,14 @@ class AuthQuery:
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
-                    "SELECT id, username, correo, contrasena, pais, departamento, ciudad, created_at FROM usuarios WHERE correo = %s",
+                    """SELECT u.id, u.username, u.correo, u.contrasena, u.pais, u.departamento, u.ciudad, u.created_at,
+                              u.empresa_id,
+                              COALESCE(p.nombre_plan, 'FREE') as plan,
+                              COALESCE(s.limite_recetas_total, 5) as limite_recetas_total
+                       FROM usuarios u
+                       LEFT JOIN usuario_suscripciones s ON s.id_usuario = u.id
+                       LEFT JOIN planes p ON p.id_plan = s.id_plan
+                       WHERE u.correo = %s""",
                     (correo,)
                 )
                 user = cursor.fetchone()
@@ -63,7 +83,10 @@ class AuthQuery:
                         "pais": user[4],
                         "departamento": user[5],
                         "ciudad": user[6],
-                        "created_at": user[7].isoformat() if user[7] else None
+                        "created_at": user[7].isoformat() if user[7] else None,
+                        "empresa_id": user[8],
+                        "plan": user[9],
+                        "limite_recetas_total": user[10],
                     }
                 return {"status": "error", "message": "Usuario o contraseña incorrectos"}
         except Exception as e:

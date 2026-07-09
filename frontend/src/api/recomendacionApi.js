@@ -12,17 +12,6 @@ async function request(path, options = {}) {
   return response.json()
 }
 
-export async function createVentaDiaria(data) {
-  return request('/api/ventas-diarias', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  })
-}
-
-export async function getVentasDiarias() {
-  return request('/api/ventas-diarias')
-}
-
-export async function getVentasDiariasPorReceta(idReceta) {
-  return request(`/api/ventas-diarias/receta/${idReceta}`)
+export async function getRecomendaciones() {
+  return request('/api/recomendaciones')
 }

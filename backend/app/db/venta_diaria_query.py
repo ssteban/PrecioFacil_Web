@@ -9,17 +9,17 @@ UNIQUE_CONSTRAINT_MSG = (
 class VentaDiariaQuery:
     @staticmethod
     def create_venta(id_receta, fecha_venta, unidades_vendidas, unidades_sobrantes,
-                     ingreso_total, ganancia_neta_total):
+                     ingreso_total, ganancia_neta_total, empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
                     """INSERT INTO ventas_diarias
                        (id_receta, fecha_venta, unidades_vendidas, unidades_sobrantes,
-                        ingreso_total, ganancia_neta_total)
-                       VALUES (%s, %s, %s, %s, %s, %s)
+                        ingreso_total, ganancia_neta_total, empresa_id)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s)
                        RETURNING id_venta""",
                     (id_receta, fecha_venta, unidades_vendidas, unidades_sobrantes,
-                     ingreso_total, ganancia_neta_total)
+                     ingreso_total, ganancia_neta_total, empresa_id)
                 )
                 id_venta = cursor.fetchone()[0]
                 return {"status": "success", "id": id_venta}
@@ -30,7 +30,7 @@ class VentaDiariaQuery:
             return {"status": "error", "message": error_msg}
 
     @staticmethod
-    def get_ventas():
+    def get_ventas(empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
@@ -40,7 +40,9 @@ class VentaDiariaQuery:
                               r.nombre_receta, r.costo_unidad, v.created_at
                        FROM ventas_diarias v
                        JOIN recetas r ON v.id_receta = r.id_receta
-                       ORDER BY v.fecha_venta DESC, v.created_at DESC"""
+                       WHERE v.empresa_id = %s
+                       ORDER BY v.fecha_venta DESC, v.created_at DESC""",
+                    (empresa_id,)
                 )
                 rows = cursor.fetchall()
                 ventas = []
@@ -62,7 +64,7 @@ class VentaDiariaQuery:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def get_ventas_por_receta(id_receta):
+    def get_ventas_por_receta(id_receta, empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
@@ -72,9 +74,9 @@ class VentaDiariaQuery:
                               r.nombre_receta, r.costo_unidad, v.created_at
                        FROM ventas_diarias v
                        JOIN recetas r ON v.id_receta = r.id_receta
-                       WHERE v.id_receta = %s
+                       WHERE v.id_receta = %s AND v.empresa_id = %s
                        ORDER BY v.fecha_venta DESC""",
-                    (id_receta,)
+                    (id_receta, empresa_id)
                 )
                 rows = cursor.fetchall()
                 ventas = []

@@ -8,6 +8,7 @@ import InsumosCostos from './components/InsumosCostos'
 import CreadorRecetas from './components/CreadorRecetas'
 import MisProductos from './components/MisProductos'
 import MetricasMermas from './components/MetricasMermas'
+import RecomendacionesProduccion from './components/RecomendacionesProduccion'
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="recetas" element={<CreadorRecetas />} />
         <Route path="productos" element={<MisProductos />} />
         <Route path="metricas" element={<MetricasMermas />} />
+        <Route path="recomendaciones" element={<RecomendacionesProduccion />} />
       </Route>
     </Routes>
   )

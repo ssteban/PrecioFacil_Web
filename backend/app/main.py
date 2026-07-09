@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import auth_route, insumo_route, receta_route, venta_diaria_route
+from app.routes import auth_route, insumo_route, receta_route, venta_diaria_route, recomendacion_route
 
 
 app = FastAPI()
@@ -27,3 +27,4 @@ app.include_router(auth_route.router, prefix="/auth", tags=["auth"])
 app.include_router(insumo_route.router, prefix="/api", tags=["insumos"])
 app.include_router(receta_route.router, prefix="/api", tags=["recetas"])
 app.include_router(venta_diaria_route.router, prefix="/api", tags=["ventas"])
+app.include_router(recomendacion_route.router, prefix="/api", tags=["recomendaciones"])

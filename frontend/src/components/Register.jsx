@@ -13,6 +13,12 @@ const TIPOS_NEGOCIO = [
   { label: 'Panadería', value: 'PANADERIA' },
 ]
 
+const MEDIOS_PAGO = [
+  { label: 'Por definir / En blanco', value: 'EN_BLANCO' },
+  { label: 'Solo Efectivo', value: 'SOLO_EFECTIVO' },
+  { label: 'Cualquier medio de pago (Efectivo y Transferencias/QR)', value: 'CUALQUIER_MEDIO' },
+]
+
 const INITIAL_STATE = {
   username: '',
   email: '',
@@ -23,6 +29,7 @@ const INITIAL_STATE = {
   ciudad: '',
   nombre_emprendimiento: '',
   tipoNegocio: TIPOS_NEGOCIO[0].value,
+  medios_pago: MEDIOS_PAGO[0].value,
 }
 
 function Register() {
@@ -88,6 +95,7 @@ function Register() {
         ciudad: formData.ciudad,
         nombre_emprendimiento: formData.nombre_emprendimiento,
         tipo_negocio: formData.tipoNegocio,
+        medios_pago: formData.medios_pago,
       }
       await registerUser(payload)
       setSuccess(true)
@@ -236,6 +244,25 @@ function Register() {
                 />
                 {errors.ciudad && <p className="text-red-500 text-xs mt-1">{errors.ciudad}</p>}
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="medios_pago" className="block text-sm font-medium text-slate-700 mb-1">
+                Métodos de pago
+              </label>
+              <select
+                id="medios_pago"
+                name="medios_pago"
+                value={formData.medios_pago}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition text-slate-800 bg-white"
+              >
+                {MEDIOS_PAGO.map((medio) => (
+                  <option key={medio.value} value={medio.value}>
+                    {medio.label}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

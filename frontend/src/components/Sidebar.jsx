@@ -1,11 +1,12 @@
 import { Link, useLocation } from 'react-router-dom'
-import { ClipboardList, Package, BarChart3, ScrollText, User, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
+import { ClipboardList, Package, BarChart3, ScrollText, TrendingUp, User, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 
 const NAV_ITEMS = [
   { label: 'Creador de Recetas', to: '/dashboard/recetas', icon: ClipboardList },
   { label: 'Mis Productos', to: '/dashboard/productos', icon: ScrollText },
   { label: 'Insumos y Costos', to: '/dashboard/insumos', icon: Package },
   { label: 'Métricas de Mermas', to: '/dashboard/metricas', icon: BarChart3 },
+  { label: 'Recomendaciones', to: '/dashboard/recomendaciones', icon: TrendingUp },
 ]
 
 function Sidebar({ expanded, onToggle, mobileOpen, onMobileClose, onLogout }) {

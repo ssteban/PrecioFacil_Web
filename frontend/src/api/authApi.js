@@ -23,5 +23,10 @@ export async function loginUser(data) {
     const error = await response.json()
     throw new Error(error.detail || 'Error al iniciar sesión')
   }
-  return response.json()
+  const result = await response.json()
+  if (result.access_token) {
+    localStorage.setItem('token', result.access_token)
+    localStorage.setItem('user', JSON.stringify(result.user))
+  }
+  return result.user
 }

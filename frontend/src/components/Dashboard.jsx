@@ -18,6 +18,7 @@ function Dashboard() {
   const [insumos, setInsumos] = useState([])
   const [categorias, setCategorias] = useState(['General'])
   const [recetas, setRecetas] = useState([])
+  const [showLogoutModal, setShowLogoutModal] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -38,6 +39,8 @@ function Dashboard() {
 
   const handleLogout = () => {
     localStorage.removeItem('user')
+    localStorage.removeItem('token')
+    setShowLogoutModal(false)
     navigate('/')
   }
 
@@ -50,7 +53,7 @@ function Dashboard() {
         onToggle={() => setSidebarExpanded((prev) => !prev)}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
-        onLogout={handleLogout}
+        onLogout={() => setShowLogoutModal(true)}
       />
 
       <main
@@ -70,6 +73,35 @@ function Dashboard() {
           <Outlet context={{ insumos, setInsumos, categorias, setCategorias, recetas, setRecetas }} />
         </div>
       </main>
+
+      {showLogoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+             onClick={() => setShowLogoutModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6 relative animate-in fade-in zoom-in-95 duration-200"
+               onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-slate-800 text-center">
+              ¿Cerrar Sesión?
+            </h3>
+            <p className="text-sm text-slate-600 text-center mt-2">
+              ¿Estás seguro de que quieres cerrar sesión?
+            </p>
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowLogoutModal(false)}
+                className="flex-1 px-4 py-2.5 text-sm font-medium text-slate-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleLogout}
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg transition"
+              >
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

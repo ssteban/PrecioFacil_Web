@@ -3,12 +3,12 @@ from app.db.init import DatabaseConnection
 
 class CategoriaQuery:
     @staticmethod
-    def create_categoria(nombre):
+    def create_categoria(nombre, empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
-                    "INSERT INTO categorias (n_categoria) VALUES (%s) RETURNING id_categoria",
-                    (nombre.strip().upper(),)
+                    "INSERT INTO categorias (n_categoria, empresa_id) VALUES (%s, %s) RETURNING id_categoria",
+                    (nombre.strip().upper(), empresa_id)
                 )
                 id_categoria = cursor.fetchone()[0]
                 return {"status": "success", "id": id_categoria}
@@ -16,11 +16,12 @@ class CategoriaQuery:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def get_categorias():
+    def get_categorias(empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
-                    "SELECT id_categoria, n_categoria, created_at FROM categorias ORDER BY n_categoria"
+                    "SELECT id_categoria, n_categoria, created_at FROM categorias WHERE empresa_id = %s ORDER BY n_categoria",
+                    (empresa_id,)
                 )
                 rows = cursor.fetchall()
                 return {
@@ -38,12 +39,12 @@ class CategoriaQuery:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def delete_categoria(id_categoria):
+    def delete_categoria(id_categoria, empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
-                    "DELETE FROM categorias WHERE id_categoria = %s RETURNING id_categoria",
-                    (id_categoria,)
+                    "DELETE FROM categorias WHERE id_categoria = %s AND empresa_id = %s RETURNING id_categoria",
+                    (id_categoria, empresa_id)
                 )
                 deleted = cursor.fetchone()
                 if not deleted:
@@ -55,29 +56,29 @@ class CategoriaQuery:
 
 class InsumoQuery:
     @staticmethod
-    def _resolve_categoria(cursor, categoria_nombre):
+    def _resolve_categoria(cursor, categoria_nombre, empresa_id):
         cursor.execute(
-            "SELECT id_categoria FROM categorias WHERE n_categoria = %s",
-            (categoria_nombre.strip().upper(),)
+            "SELECT id_categoria FROM categorias WHERE n_categoria = %s AND empresa_id = %s",
+            (categoria_nombre.strip().upper(), empresa_id)
         )
         row = cursor.fetchone()
         if row:
             return row[0]
         cursor.execute(
-            "INSERT INTO categorias (n_categoria) VALUES (%s) RETURNING id_categoria",
-            (categoria_nombre.strip().upper(),)
+            "INSERT INTO categorias (n_categoria, empresa_id) VALUES (%s, %s) RETURNING id_categoria",
+            (categoria_nombre.strip().upper(), empresa_id)
         )
         return cursor.fetchone()[0]
 
     @staticmethod
-    def create_insumo(nombre_insumo, precio_compra, cantidad, unidad_medida, categoria):
+    def create_insumo(nombre_insumo, precio_compra, cantidad, unidad_medida, categoria, empresa_id):
         try:
             with DatabaseConnection() as cursor:
-                id_categoria = InsumoQuery._resolve_categoria(cursor, categoria)
+                id_categoria = InsumoQuery._resolve_categoria(cursor, categoria, empresa_id)
                 cursor.execute(
-                    """INSERT INTO insumos (nombre_insumo, precio_compra, cantidad, unidad_medida, id_categoria)
-                       VALUES (%s, %s, %s, %s, %s) RETURNING id_insumo""",
-                    (nombre_insumo.strip(), precio_compra, cantidad, unidad_medida, id_categoria)
+                    """INSERT INTO insumos (nombre_insumo, precio_compra, cantidad, unidad_medida, id_categoria, empresa_id)
+                       VALUES (%s, %s, %s, %s, %s, %s) RETURNING id_insumo""",
+                    (nombre_insumo.strip(), precio_compra, cantidad, unidad_medida, id_categoria, empresa_id)
                 )
                 id_insumo = cursor.fetchone()[0]
                 return {"status": "success", "id": id_insumo}
@@ -85,7 +86,7 @@ class InsumoQuery:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def get_insumos():
+    def get_insumos(empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
@@ -94,7 +95,9 @@ class InsumoQuery:
                               i.created_at, i.updated_at
                        FROM insumos i
                        JOIN categorias c ON i.id_categoria = c.id_categoria
-                       ORDER BY i.created_at DESC"""
+                       WHERE i.empresa_id = %s
+                       ORDER BY i.created_at DESC""",
+                    (empresa_id,)
                 )
                 rows = cursor.fetchall()
                 return {
@@ -118,7 +121,7 @@ class InsumoQuery:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def update_insumo(id_insumo, nombre_insumo=None, precio_compra=None, cantidad=None, unidad_medida=None, categoria=None):
+    def update_insumo(id_insumo, empresa_id, nombre_insumo=None, precio_compra=None, cantidad=None, unidad_medida=None, categoria=None):
         try:
             with DatabaseConnection() as cursor:
                 fields = []
@@ -136,14 +139,15 @@ class InsumoQuery:
                     fields.append("unidad_medida = %s")
                     values.append(unidad_medida)
                 if categoria is not None:
-                    id_categoria = InsumoQuery._resolve_categoria(cursor, categoria)
+                    id_categoria = InsumoQuery._resolve_categoria(cursor, categoria, empresa_id)
                     fields.append("id_categoria = %s")
                     values.append(id_categoria)
                 if not fields:
                     return {"status": "error", "message": "Sin campos para actualizar"}
                 values.append(id_insumo)
+                values.append(empresa_id)
                 cursor.execute(
-                    f"UPDATE insumos SET {', '.join(fields)} WHERE id_insumo = %s RETURNING id_insumo",
+                    f"UPDATE insumos SET {', '.join(fields)} WHERE id_insumo = %s AND empresa_id = %s RETURNING id_insumo",
                     values
                 )
                 updated = cursor.fetchone()
@@ -154,12 +158,12 @@ class InsumoQuery:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def delete_insumo(id_insumo):
+    def delete_insumo(id_insumo, empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
-                    "DELETE FROM insumos WHERE id_insumo = %s RETURNING id_insumo",
-                    (id_insumo,)
+                    "DELETE FROM insumos WHERE id_insumo = %s AND empresa_id = %s RETURNING id_insumo",
+                    (id_insumo, empresa_id)
                 )
                 deleted = cursor.fetchone()
                 if not deleted:

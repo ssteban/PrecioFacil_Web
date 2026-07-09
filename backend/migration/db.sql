@@ -154,3 +154,138 @@ CREATE TABLE ventas_diarias (
 
 
 
+
+-- =========================================================================
+-- CONSOLIDACIÓN FINAL: MÓDULO PREDICTIVO Y MÉTODOS DE PAGO 'COSTLY'
+-- =========================================================================
+
+-- 1. Modificar la tabla 'empresas' para añadir el control de métodos de pago
+-- Usamos un CHECK para restringir el campo exactamente a tus 3 opciones de negocio.
+ALTER TABLE empresas 
+ADD COLUMN medios_pago VARCHAR(30) DEFAULT 'EN_BLANCO' 
+CHECK (medios_pago IN ('EN_BLANCO', 'SOLO_EFECTIVO', 'CUALQUIER_MEDIO'));
+
+
+-- 2. Crear la tabla Maestra de Tipos de Eventos (Si no la habías creado antes)
+CREATE TABLE IF NOT EXISTS tipos_eventos (
+    id_tipo_evento SERIAL PRIMARY KEY,
+    nombre_evento VARCHAR(100) NOT NULL UNIQUE, -- Ej: 'PARTIDO_DE_FUTBOL', 'QUINCENA_O_PAGO'
+    multiplicador_sugerido NUMERIC(3, 2) DEFAULT 1.50,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+
+-- 3. Alterar la tabla 'ventas_diarias' existente (Inyección de campos de control)
+-- Esto permite marcar los días extraordinarios en el histórico para proteger los promedios normales
+ALTER TABLE ventas_diarias 
+ADD COLUMN es_evento_extraordinario BOOLEAN DEFAULT FALSE,
+ADD COLUMN id_tipo_evento INT DEFAULT NULL,
+ADD CONSTRAINT fk_venta_tipo_evento 
+    FOREIGN KEY (id_tipo_evento) 
+    REFERENCES tipos_eventos(id_tipo_evento) 
+    ON DELETE SET NULL;
+
+
+-- 4. Crear la tabla de Predicciones Generadas (Caché del Frontend)
+-- Conectada a tu tabla 'recetas' actual
+CREATE TABLE IF NOT EXISTS predicciones_diarias (
+    id_prediccion SERIAL PRIMARY KEY,
+    id_receta INT NOT NULL,
+    fecha_prediccion DATE NOT NULL DEFAULT (CURRENT_DATE + INTERVAL '1 day'),
+    cantidad_sugerida_normal INT NOT NULL DEFAULT 0,
+    cantidad_sugerida_evento INT DEFAULT NULL, -- Exclusivo para capa Premium
+    fase_algoritmo VARCHAR(20) DEFAULT 'Fase 1' CHECK (fase_algoritmo IN ('Fase 1', 'Fase 2')),
+    motivo_sugerencia TEXT,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_receta_prediccion 
+        FOREIGN KEY (id_receta) 
+        REFERENCES recetas(id_receta) 
+        ON DELETE CASCADE,
+        
+    CONSTRAINT unique_prediccion_receta_dia UNIQUE (id_receta, fecha_prediccion)
+);
+
+
+-- 5. Insertar los Seeders calibrados con lógica defensiva en los eventos
+INSERT INTO tipos_eventos (nombre_evento, multiplicador_sugerido) VALUES
+    ('PARTIDO_DE_FUTBOL', 1.50),   
+    ('CONCIERTO_O_FIESTA', 1.70),  
+    ('DIA_FESTIVO', 0.95),         -- Defensivo para evitar mermas por zonas fantasmas
+    ('QUINCENA_O_PAGO', 1.50)      
+ON CONFLICT (nombre_evento) DO NOTHING;
+
+
+
+-- =========================================================================
+-- MÓDULO DE PLANES Y CONTROL DE CAPACIDAD DE RECETAS
+-- =========================================================================
+
+-- 1. Tabla Maestra de Planes
+CREATE TABLE IF NOT EXISTS planes (
+    id_plan SERIAL PRIMARY KEY,
+    nombre_plan VARCHAR(30) NOT NULL UNIQUE, -- 'FREE', 'PREMIUM'
+    descripcion TEXT,
+    precio_base NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+    recetas_incluidas_base INT NOT NULL DEFAULT 5 -- El Free incluye 5, el Premium incluye 5 más (Total 10 base)
+);
+
+-- 2. Tabla de Suscripciones (La intermedia inteligente)
+-- Une al usuario con su plan actual y define dinámicamente su límite total
+CREATE TABLE IF NOT EXISTS usuario_suscripciones (
+    id_suscripcion SERIAL PRIMARY KEY,
+    id_usuario INT NOT NULL UNIQUE, -- Un usuario solo tiene una suscripción activa a la vez
+    id_plan INT NOT NULL,
+    
+    -- Manejo explícito de capacidad (Evita multiplicadores complejos en código)
+    paquetes_extra_comprados INT DEFAULT 0, -- Cantidad de "bloques de 5" adicionales que ha comprado
+    limite_recetas_total INT NOT NULL DEFAULT 5, -- Suma total: (recetas_base del plan) + (paquetes_extra * 5)
+    
+    estado_suscripcion VARCHAR(20) DEFAULT 'ACTIVO' CHECK (estado_suscripcion IN ('ACTIVO', 'VENCIDO', 'CANCELADO')),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_suscripcion_usuario FOREIGN KEY (id_usuario) REFERENCES usuarios(id) ON DELETE CASCADE,
+    CONSTRAINT fk_suscripcion_plan FOREIGN KEY (id_plan) REFERENCES planes(id_plan)
+);
+
+-- 3. Triggers para actualizar 'updated_at'
+CREATE TRIGGER update_usuario_suscripciones_updated_at
+    BEFORE UPDATE ON usuario_suscripciones
+    FOR EACH ROW
+    EXECUTE PROCEDURE update_updated_at_column();
+
+
+-- =========================================================================
+-- SEEDERS PARA INICIALIZAR LOS PLANES
+-- =========================================================================
+INSERT INTO planes (nombre_plan, descripcion, precio_base, recetas_incluidas_base) VALUES
+    ('FREE', 'Plan inicial de control básico de mermas', 0.00, 5),
+    ('PREMIUM', 'Plan avanzado con predicción de eventos e insumos ilimitados', 9.99, 10) -- Ya incluye los 5 base + 5 extra
+ON CONFLICT (nombre_plan) DO NOTHING;
+
+ALTER TABLE categorias
+  ADD COLUMN empresa_id INT NOT NULL,
+  ADD CONSTRAINT fk_categoria_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(id),
+  DROP CONSTRAINT categorias_n_categoria_key,
+  ADD CONSTRAINT categorias_unique_nombre_empresa UNIQUE (n_categoria, empresa_id);
+
+ALTER TABLE insumos
+  ADD COLUMN empresa_id INT NOT NULL,
+  ADD CONSTRAINT fk_insumo_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(id);
+
+ALTER TABLE recetas
+  ADD COLUMN empresa_id INT NOT NULL,
+  ADD CONSTRAINT fk_receta_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(id);
+
+ALTER TABLE ventas_diarias
+  ADD COLUMN empresa_id INT NOT NULL,
+  ADD CONSTRAINT fk_venta_empresa FOREIGN KEY (empresa_id) REFERENCES empresas(id);
+
+
+
+
+
+
+
+

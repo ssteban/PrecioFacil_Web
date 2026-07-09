@@ -12,6 +12,7 @@ class RegisterRequest(BaseModel):
     ciudad: str
     nombre_emprendimiento: str
     tipo_negocio: str
+    medios_pago: str = 'EN_BLANCO'
 
 
 class LoginRequest(BaseModel):
@@ -26,6 +27,8 @@ class UserResponse(BaseModel):
     pais: str
     departamento: str
     ciudad: str
+    plan: str = 'FREE'
+    limite_recetas_total: int = 5
     created_at: Optional[str] = None
 
 

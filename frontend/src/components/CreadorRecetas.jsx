@@ -1,14 +1,18 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useOutletContext, useLocation } from 'react-router-dom'
-import { Search, Package, Plus, X, Trash2, ClipboardList, CheckCircle2 } from 'lucide-react'
+import { Search, Package, Plus, X, Trash2, ClipboardList, CheckCircle2, Lock, TrendingUp, ChevronRight } from 'lucide-react'
 import { convertirABase, formatoCOP } from '../utils/conversiones'
 import { createReceta, updateReceta, getRecetas, parseReceta } from '../api/recetaApi'
 import { createInsumo, getInsumos, parseInsumo } from '../api/insumoApi'
 
 function CreadorRecetas() {
-  const { insumos, setInsumos, categorias, setRecetas } = useOutletContext()
+  const { insumos, setInsumos, categorias, recetas, setRecetas } = useOutletContext()
   const location = useLocation()
+  const user = JSON.parse(localStorage.getItem('user') || '{}')
+  const plan = (user.plan || 'FREE').toLowerCase()
+  const limiteRecetas = user.limite_recetas_total || 5
 
+  const [showLimiteModal, setShowLimiteModal] = useState(false)
   const [receta, setReceta] = useState({ nombre: '', porcentajeGanancia: 50, unidadesProducidas: 1 })
   const [ingredientes, setIngredientes] = useState([])
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false)
@@ -16,6 +20,7 @@ function CreadorRecetas() {
   const [submittingInsumo, setSubmittingInsumo] = useState(false)
   const [error, setError] = useState('')
   const [recetaEditandoId, setRecetaEditandoId] = useState(null)
+  const haAlcanzadoLimite = recetas.length >= limiteRecetas && !recetaEditandoId
 
   const [busqueda, setBusqueda] = useState('')
   const [showDropdown, setShowDropdown] = useState(false)
@@ -446,17 +451,27 @@ function CreadorRecetas() {
           )}
 
           <div className="flex justify-end mt-6">
-            <button
-              onClick={handleGuardarReceta}
-              disabled={submitting}
-              className={`px-8 py-3 font-bold text-lg rounded-xl transition shadow-lg ${
-                submitting
-                  ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
-                  : 'bg-emerald-500 text-white hover:bg-emerald-600'
-              }`}
-            >
-              {submitting ? 'Guardando...' : 'Guardar Receta'}
-            </button>
+            {haAlcanzadoLimite ? (
+              <button
+                onClick={() => setShowLimiteModal(true)}
+                className="px-8 py-3 font-bold text-lg rounded-xl transition shadow-lg bg-slate-300 text-slate-500 cursor-not-allowed flex items-center gap-2"
+              >
+                <Lock size={18} />
+                Límite alcanzado
+              </button>
+            ) : (
+              <button
+                onClick={handleGuardarReceta}
+                disabled={submitting}
+                className={`px-8 py-3 font-bold text-lg rounded-xl transition shadow-lg ${
+                  submitting
+                    ? 'bg-gray-400 text-gray-200 cursor-not-allowed'
+                    : 'bg-emerald-500 text-white hover:bg-emerald-600'
+                }`}
+              >
+                {submitting ? 'Guardando...' : 'Guardar Receta'}
+              </button>
+            )}
           </div>
         </>
       )}
@@ -654,6 +669,68 @@ function CreadorRecetas() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {showLimiteModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 dynamic-blur"
+          onClick={() => setShowLimiteModal(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative bg-gradient-to-br from-amber-500 to-amber-700 px-6 pt-8 pb-10 text-center">
+              <button
+                onClick={() => setShowLimiteModal(false)}
+                className="absolute top-4 right-4 text-white/80 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+              <Lock size={40} className="mx-auto text-white mb-3" />
+              <h2 className="text-xl font-bold text-white">
+                Has alcanzado el límite de recetas
+              </h2>
+              <p className="text-amber-100 text-sm mt-2">
+                Tu plan {plan === 'premium' ? 'Premium' : 'Free'} permite hasta {limiteRecetas} recetas
+              </p>
+            </div>
+
+            <div className="px-6 py-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <div className="bg-amber-100 rounded-lg p-2 shrink-0">
+                  <TrendingUp size={18} className="text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-slate-800">
+                    {plan === 'premium' ? 'Amplía tu capacidad' : 'Actualiza a Premium'}
+                  </p>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {plan === 'premium'
+                      ? 'Compra paquetes adicionales para seguir creando más recetas.'
+                      : 'Desbloquea recetas ilimitadas y predicciones avanzadas con Costly Premium.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-6 pb-6">
+              <button
+                onClick={() => setShowLimiteModal(false)}
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-amber-200"
+              >
+                {plan === 'premium' ? 'Ver planes disponibles' : 'Actualizar a Premium'}
+                <ChevronRight size={18} />
+              </button>
+              <button
+                onClick={() => setShowLimiteModal(false)}
+                className="w-full text-sm text-slate-500 hover:text-slate-700 py-2 mt-2 transition-colors"
+              >
+                Entendido
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -4,16 +4,16 @@ from app.db.init import DatabaseConnection
 class RecetaQuery:
     @staticmethod
     def create_receta(nombre_receta, porcentaje_ganancia, produccion, costo_unidad, precio_unidad,
-                      ganancia_unidad, total_costo, total_unidad, total_ganancia, ingredientes):
+                      ganancia_unidad, total_costo, total_unidad, total_ganancia, ingredientes, empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
                     """INSERT INTO recetas (nombre_receta, porcentaje_ganancia, produccion,
-                       costo_unidad, precio_unidad, ganancia_unidad, total_costo, total_unidad, total_ganancia)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id_receta""",
+                       costo_unidad, precio_unidad, ganancia_unidad, total_costo, total_unidad, total_ganancia, empresa_id)
+                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id_receta""",
                     (nombre_receta.strip(), porcentaje_ganancia, produccion,
                      costo_unidad, precio_unidad, ganancia_unidad,
-                     total_costo, total_unidad, total_ganancia)
+                     total_costo, total_unidad, total_ganancia, empresa_id)
                 )
                 id_receta = cursor.fetchone()[0]
 
@@ -29,7 +29,7 @@ class RecetaQuery:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def get_recetas():
+    def get_recetas(empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
@@ -37,7 +37,8 @@ class RecetaQuery:
                               costo_unidad, precio_unidad, ganancia_unidad,
                               total_costo, total_unidad, total_ganancia,
                               created_at, updated_at
-                       FROM recetas ORDER BY created_at DESC"""
+                       FROM recetas WHERE empresa_id = %s ORDER BY created_at DESC""",
+                    (empresa_id,)
                 )
                 recetas_rows = cursor.fetchall()
 
@@ -46,7 +47,9 @@ class RecetaQuery:
                               i.nombre_insumo, ri.cantidad_usada, ri.costo_parcial
                        FROM receta_insumos ri
                        JOIN insumos i ON ri.id_insumo = i.id_insumo
-                       ORDER BY ri.id_receta, ri.id_receta_insumo"""
+                       WHERE ri.id_receta IN (SELECT id_receta FROM recetas WHERE empresa_id = %s)
+                       ORDER BY ri.id_receta, ri.id_receta_insumo""",
+                    (empresa_id,)
                 )
                 insumos_rows = cursor.fetchall()
 
@@ -87,7 +90,7 @@ class RecetaQuery:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def get_receta(id_receta):
+    def get_receta(id_receta, empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
@@ -95,8 +98,8 @@ class RecetaQuery:
                               costo_unidad, precio_unidad, ganancia_unidad,
                               total_costo, total_unidad, total_ganancia,
                               created_at, updated_at
-                       FROM recetas WHERE id_receta = %s""",
-                    (id_receta,)
+                       FROM recetas WHERE id_receta = %s AND empresa_id = %s""",
+                    (id_receta, empresa_id)
                 )
                 row = cursor.fetchone()
                 if not row:
@@ -144,12 +147,12 @@ class RecetaQuery:
             return {"status": "error", "message": str(e)}
 
     @staticmethod
-    def delete_receta(id_receta):
+    def delete_receta(id_receta, empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
-                    "DELETE FROM recetas WHERE id_receta = %s RETURNING id_receta",
-                    (id_receta,)
+                    "DELETE FROM recetas WHERE id_receta = %s AND empresa_id = %s RETURNING id_receta",
+                    (id_receta, empresa_id)
                 )
                 deleted = cursor.fetchone()
                 if not deleted:
@@ -161,17 +164,17 @@ class RecetaQuery:
     @staticmethod
     def update_receta(id_receta, nombre_receta, porcentaje_ganancia, produccion,
                       costo_unidad, precio_unidad, ganancia_unidad,
-                      total_costo, total_unidad, total_ganancia, ingredientes):
+                      total_costo, total_unidad, total_ganancia, ingredientes, empresa_id):
         try:
             with DatabaseConnection() as cursor:
                 cursor.execute(
                     """UPDATE recetas SET nombre_receta=%s, porcentaje_ganancia=%s, produccion=%s,
                        costo_unidad=%s, precio_unidad=%s, ganancia_unidad=%s,
                        total_costo=%s, total_unidad=%s, total_ganancia=%s
-                       WHERE id_receta=%s RETURNING id_receta""",
+                       WHERE id_receta=%s AND empresa_id=%s RETURNING id_receta""",
                     (nombre_receta.strip(), porcentaje_ganancia, produccion,
                      costo_unidad, precio_unidad, ganancia_unidad,
-                     total_costo, total_unidad, total_ganancia, id_receta)
+                     total_costo, total_unidad, total_ganancia, id_receta, empresa_id)
                 )
                 if not cursor.fetchone():
                     return {"status": "error", "message": "Receta no encontrada"}

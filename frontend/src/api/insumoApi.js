@@ -1,8 +1,8 @@
-import { API_URL } from './config'
+import { API_URL, authHeaders } from './config'
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...authHeaders() },
     ...options,
   })
   if (!response.ok) {
