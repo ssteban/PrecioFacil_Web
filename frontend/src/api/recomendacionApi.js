@@ -15,3 +15,7 @@ async function request(path, options = {}) {
 export async function getRecomendaciones() {
   return request('/api/recomendaciones')
 }
+
+export async function getRecomendacion(idReceta) {
+  return request(`/api/recomendaciones/${idReceta}`)
+}
